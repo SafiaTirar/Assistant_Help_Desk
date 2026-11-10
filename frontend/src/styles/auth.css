@@ -1,0 +1,23 @@
+.auth-form label,
+.password-form label { display: block; font-size: .76rem; font-weight: 650; margin: 14px 0; }
+.auth-form input,
+.password-form input { display: block; width: 100%; margin-top: 6px; padding: 11px; border: 1px solid var(--border); border-radius: 9px; background: white; }
+.auth-form .button { width: 100%; margin-top: 10px; }
+.auth-error { padding: 10px 12px; border-radius: 9px; background: #fbeaea; color: #9a3737; font-size: .76rem; }
+.auth-success { padding: 10px 12px; border-radius: 9px; background: #e7f5ee; color: #267052; font-size: .76rem; }
+.password-form { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 20px 0; margin: 22px 0; }
+.password-form h3 { display: flex; align-items: center; gap: 8px; }
+.password-form small { display: block; color: var(--muted); margin: -4px 0 14px; }
+.user-create-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.user-create-form h2,
+.user-create-form > small,
+.user-create-form > div { grid-column: 1 / -1; }
+.user-create-form label { font-size: .73rem; font-weight: 650; }
+.user-create-form input,
+.user-create-form select { display: block; width: 100%; height: 40px; margin-top: 6px; border: 1px solid var(--border); border-radius: 9px; padding: 0 10px; background: white; }
+.user-create-form > div { display: flex; justify-content: flex-end; gap: 8px; }
+.empty-dashboard { color: var(--muted); font-size: .78rem; padding: 18px 0; }
+
+@media (max-width: 700px) {
+  .user-create-form { grid-template-columns: 1fr; }
+}

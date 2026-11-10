@@ -1,0 +1,12 @@
+import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import ChatInput from '../../components/chat/ChatInput'
+import ChatMessage from '../../components/chat/ChatMessage'
+import EmptyChatState from '../../components/chat/EmptyChatState'
+import TypingIndicator from '../../components/chat/TypingIndicator'
+import { useChat } from '../../contexts/ChatContext'
+export default function ChatPage() { const { conversationId } = useParams(); const { conversations, create, send, refresh } = useChat(); const [loading, setLoading] = useState(false); const [optimistic, setOptimistic] = useState(null); const controller = useRef(null); const bottom = useRef(null); const navigate = useNavigate(); const location = useLocation(); const conversation = conversations.find((item) => item.id === conversationId); const messages = conversation?.messages || []
+  useEffect(() => { bottom.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages.length, loading, optimistic])
+  const startSuggested = async (question) => { const next = await create(); await refresh(); navigate(`/chat/${next.id}`, { state: { preset: `${question} ` } }) }
+  const ask = async (question) => { if (!conversationId || loading) return; setLoading(true); setOptimistic({ id: `temp-${Date.now()}`, role: 'user', content: question, createdAt: new Date().toISOString() }); controller.current = new AbortController(); try { await send(question, conversationId, controller.current.signal); await refresh(); setOptimistic(null) } catch (error) { if (error.name !== 'AbortError') console.error(error); setOptimistic(null) } finally { setLoading(false) } }
+  return <section className="chat-page"><div className="chat-scroll">{!conversationId || (!messages.length && !optimistic) ? <EmptyChatState onQuestion={startSuggested} /> : <div className="messages"><div className="conversation-title"><span className="eyebrow">Conversation</span><h1>{conversation?.title || 'Nouvelle conversation'}</h1></div>{messages.map((message) => <ChatMessage key={message.id} message={message} />)}{optimistic && <ChatMessage message={optimistic} />}{loading && <TypingIndicator />}<div ref={bottom} /></div>}</div>{conversationId ? <ChatInput key={`${conversationId}-${location.key}`} onSend={ask} loading={loading} onStop={() => controller.current?.abort()} initialValue={location.state?.preset || ''} /> : <div className="empty-composer-note">Créez une nouvelle conversation pour commencer.</div>}</section> }

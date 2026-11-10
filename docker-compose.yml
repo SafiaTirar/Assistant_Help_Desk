@@ -1,0 +1,105 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "127.0.0.1:${QDRANT_PORT:-6333}:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api-staging:
+    build:
+      context: ./backend
+    init: true
+    restart: unless-stopped
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    environment:
+      DATABASE_URL: ${STAGING_DATABASE_URL:?STAGING_DATABASE_URL is required}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION:-onboarding_docs}
+      OLLAMA_URL: ${DOCKER_OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_LLM_MODEL: ${OLLAMA_LLM_MODEL:-llama3}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      CONFIDENCE_THRESHOLD: ${CONFIDENCE_THRESHOLD:-0.60}
+      RETRIEVAL_CANDIDATES: ${RETRIEVAL_CANDIDATES:-6}
+      RAG_CANDIDATE_POOL_SIZE: ${RAG_CANDIDATE_POOL_SIZE:-15}
+      RAG_FINAL_TOP_K: ${RAG_FINAL_TOP_K:-5}
+      SIMILARITY_TOP_K: ${SIMILARITY_TOP_K:-2}
+      LIST_RETRIEVAL_PER_QUERY: ${LIST_RETRIEVAL_PER_QUERY:-3}
+      PROCESS_RETRIEVAL_PER_QUERY: ${PROCESS_RETRIEVAL_PER_QUERY:-3}
+      LEXICAL_SCORE_WEIGHT: ${LEXICAL_SCORE_WEIGHT:-0.20}
+      INTENT_SCORE_WEIGHT: ${INTENT_SCORE_WEIGHT:-0.06}
+      OLLAMA_REQUEST_TIMEOUT: ${OLLAMA_REQUEST_TIMEOUT:-180}
+      OLLAMA_EMBEDDING_TIMEOUT_SECONDS: ${OLLAMA_EMBEDDING_TIMEOUT_SECONDS:-60}
+      OLLAMA_EMBEDDING_BATCH_SIZE: ${OLLAMA_EMBEDDING_BATCH_SIZE:-32}
+      PROCESS_REQUEST_TIMEOUT: ${PROCESS_REQUEST_TIMEOUT:-180}
+      RAG_QUESTION_TIMEOUT_SECONDS: ${RAG_QUESTION_TIMEOUT_SECONDS:-180}
+      RAG_EVALUATION_CONCURRENCY: ${RAG_EVALUATION_CONCURRENCY:-1}
+      RAG_EMBEDDING_CACHE_SIZE: ${RAG_EMBEDDING_CACHE_SIZE:-512}
+      QDRANT_REQUEST_TIMEOUT_SECONDS: ${QDRANT_REQUEST_TIMEOUT_SECONDS:-30}
+      SCOPE_OUT_OF_SCOPE_THRESHOLD: ${SCOPE_OUT_OF_SCOPE_THRESHOLD:-0.68}
+      SCOPE_OUT_OF_SCOPE_MARGIN: ${SCOPE_OUT_OF_SCOPE_MARGIN:-0.10}
+      OLLAMA_NUM_PREDICT: ${OLLAMA_NUM_PREDICT:-64}
+      LIST_NUM_PREDICT: ${LIST_NUM_PREDICT:-128}
+      PROCESS_NUM_PREDICT: ${PROCESS_NUM_PREDICT:-448}
+      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-2048}
+      LONG_FORM_NUM_CTX: ${LONG_FORM_NUM_CTX:-2048}
+      PROMPT_TOKEN_RESERVE: ${PROMPT_TOKEN_RESERVE:-320}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
+      OLLAMA_NUM_THREAD: ${OLLAMA_NUM_THREAD:-3}
+      DOCUMENT_UPLOAD_DIR: /app/data/uploaded_documents
+      MAX_DOCUMENT_SIZE_MB: ${MAX_DOCUMENT_SIZE_MB:-20}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:${API_PORT:-8001}:8000"
+    volumes:
+      - uploaded_documents_staging:/app/data/uploaded_documents
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: /api
+    init: true
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_BIND_ADDRESS:-0.0.0.0}:${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      api-staging:
+        condition: service_healthy
+
+volumes:
+  qdrant_data:
+  postgres_data:
+  uploaded_documents_staging:

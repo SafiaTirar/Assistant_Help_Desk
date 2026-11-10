@@ -1,0 +1,24 @@
+[
+  {
+    "code": "PUBLIC-DEMO-001",
+    "category": "onboarding_generique",
+    "question": "Quelles sont les principales étapes du parcours d'intégration décrites dans les documents ?",
+    "expectedStatus": "reponse_trouvee",
+    "expectedAnswer": "Le parcours suit les étapes indiquées dans les documents importés.",
+    "expectedPages": [],
+    "expectedSections": [],
+    "expectedDocuments": [],
+    "requiredTerms": ["étapes", "parcours"]
+  },
+  {
+    "code": "PUBLIC-DEMO-002",
+    "category": "hors_perimetre",
+    "question": "Quel est le résultat du dernier match de football ?",
+    "expectedStatus": "hors_perimetre",
+    "expectedAnswer": "La question ne concerne pas les documents d'onboarding.",
+    "expectedPages": [],
+    "expectedSections": [],
+    "expectedDocuments": [],
+    "requiredTerms": []
+  }
+]

@@ -1,0 +1,2 @@
+const labels = { reponse_trouvee: 'Réponse trouvée', reponse_non_trouvee: 'Information insuffisante', information_insuffisante: 'Information insuffisante', hors_perimetre: 'Hors périmètre', question_ambigue: 'Question ambiguë', prompt_injection: 'Instruction refusée', erreur_technique: 'Erreur technique' }
+export default function StatusBadge({ status }) { const label = labels[status] || status; return <span className={`badge badge-${status?.replaceAll(' ', '-').toLowerCase()}`}>{label}</span> }
